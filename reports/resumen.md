@@ -21,7 +21,7 @@ Fuente: I-Cheng Yeh (2009), *Default of Credit Card Clients*, UCI Machine Learni
 | recall | 0.667 | 0.262 | 0.243 | 0.213 | 0.570 | 0.310 | 0.113 | 2.33× | 37.0% |
 | combinacion | 0.685 | 0.277 | 0.259 | 0.221 | 0.534 | 0.312 | 0.112 | 2.44× | 33.5% |
 
-    **Mayor PR AUC observada: `combinacion`**, AP=0.277. La diferencia con el siguiente método es **0.0023 puntos de AP**: demasiado pequeña para proclamar superioridad robusta sin intervalos de incertidumbre ni validación temporal. Tampoco implica que sea mejor en recall, precisión a un umbral o valor económico.
+**Mayor PR AUC observada: `combinacion`**, AP=0.277. La diferencia con el siguiente método es **0.0023 puntos de AP**: demasiado pequeña para proclamar superioridad robusta sin intervalos de incertidumbre ni validación temporal. Tampoco implica que sea mejor en recall, precisión a un umbral o valor económico.
 
 Los umbrales se seleccionaron usando predicciones *out-of-fold* del conjunto de desarrollo, con restricciones de cobertura/capacidad. La combinación es un promedio 50/50, evaluado como tercera hipótesis y **no se presupone mejor**.
 
