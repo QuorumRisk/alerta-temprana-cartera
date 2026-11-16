@@ -345,7 +345,7 @@ Fuente: I-Cheng Yeh (2009), *Default of Credit Card Clients*, UCI Machine Learni
 ## Comparación final (holdout, no usada para ajustar umbrales)
 
 {header}
-    **Mayor PR AUC observada: `{winner['modelo']}`**, AP={winner['pr_auc_average_precision']:.3f}. La diferencia con el siguiente método es **{winner['pr_auc_average_precision'] - sorted((m['pr_auc_average_precision'] for m in metrics), reverse=True)[1]:.4f} puntos de AP**: demasiado pequeña para proclamar superioridad robusta sin intervalos de incertidumbre ni validación temporal. Tampoco implica que sea mejor en recall, precisión a un umbral o valor económico.
+**Mayor PR AUC observada: `{winner['modelo']}`**, AP={winner['pr_auc_average_precision']:.3f}. La diferencia con el siguiente método es **{winner['pr_auc_average_precision'] - sorted((m['pr_auc_average_precision'] for m in metrics), reverse=True)[1]:.4f} puntos de AP**: demasiado pequeña para proclamar superioridad robusta sin intervalos de incertidumbre ni validación temporal. Tampoco implica que sea mejor en recall, precisión a un umbral o valor económico.
 
 Los umbrales se seleccionaron usando predicciones *out-of-fold* del conjunto de desarrollo, con restricciones de cobertura/capacidad. La combinación es un promedio 50/50, evaluado como tercera hipótesis y **no se presupone mejor**.
 
