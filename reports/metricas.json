@@ -12,7 +12,7 @@
       "xlrd": "2.0.1",
       "PyYAML": "6.0.3"
     },
-    "commit_codigo_fuente": "fe61a257",
+    "commit_codigo_fuente": "671b6465",
     "nota_commit": "Revisión fuente del pipeline; no es el commit que incorpora este JSON (referencia circular)."
   },
   "dataset": {

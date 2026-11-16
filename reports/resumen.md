@@ -66,7 +66,7 @@ mayor prioridad; **no** una reducción causal de defaults ni retorno financiero.
 ## Entorno de generación
 
 - Python **3.12.14**, **Linux** (x86_64).
-- Commit de código fuente **`fe61a257`**.
+- Commit de código fuente **`671b6465`**.
 - Dependencias exactas en `requirements.txt`; detalles en `docs/ENTORNO.md`.
 
 ## Límites para producción

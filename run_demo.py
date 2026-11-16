@@ -34,9 +34,9 @@ from src.models.recall.modelo import crear_modelo as crear_logistica
 RAIZ = Path(__file__).resolve().parent
 SEMILLA = 42
 DEPENDENCIAS = ("numpy", "pandas", "scikit-learn", "matplotlib", "xlrd", "PyYAML")
-# Commit auditado previo a la reorganización; se sustituye por el commit de
-# código modular publicado en la última fase del cierre. Ver docs/ENTORNO.md.
-COMMIT_CODIGO_FUENTE = "fe61a257"
+# Revisión publicada del código modular que se audita; el commit final
+# de informes es otro porque un JSON no puede contener su propio hash.
+COMMIT_CODIGO_FUENTE = "671b6465"
 
 
 def validar_entorno() -> None:
