@@ -1,0 +1,109 @@
+{
+  "dataset": {
+    "nombre": "Default of Credit Card Clients",
+    "doi": "https://doi.org/10.24432/C55S3H",
+    "licencia": "CC BY 4.0",
+    "fuente": "https://archive.ics.uci.edu/static/public/350/default+of+credit+card+clients.zip"
+  },
+  "definicion_target": {
+    "observacion": "abril-septiembre 2005",
+    "desempeno": "siguiente mes (etiqueta UCI)",
+    "evento": "default payment next month = 1",
+    "no_evento": "default payment next month = 0",
+    "indeterminados": "etiquetas ausentes/no binarias excluidas; ninguno en este dataset",
+    "exclusion_cartera_correctiva": "PAY_0 > 0",
+    "semantica_ambigua": "PAY_0 0/-2 no prueba que esté al día"
+  },
+  "cohorte": {
+    "total_filas_fuente": 30000,
+    "filas_target_indeterminado_o_invalido": 0,
+    "filas_cupo_o_historial_incompleto": 0,
+    "filas_atraso_positivo_actual_excluidas": 6818,
+    "filas_cohorte_preventiva": 23182,
+    "eventos_cohorte": 3207,
+    "tasa_evento_cohorte": 0.13834009145026313,
+    "nota": "PAY_0 <= 0 significa sin atraso POSITIVO registrado; no garantiza ausencia de riesgos ni pagos puntuales."
+  },
+  "validacion": {
+    "particion": "75/25 estratificada, random_state=42",
+    "desarrollo_cv": "4-fold StratifiedKFold; umbrales a partir de probabilidades out-of-fold",
+    "motivo_no_out_of_time": "único corte temporal para todos los clientes",
+    "n_desarrollo": 17386,
+    "n_prueba": 5796
+  },
+  "umbrales_oof": {
+    "precision": {
+      "threshold": 0.3211861949572507,
+      "precision": 0.37701149425287356,
+      "recall": 0.1363825363825364,
+      "f1": 0.20030534351145038,
+      "contact_rate": 0.0500402622799954
+    },
+    "recall": {
+      "threshold": 0.13362407857230668,
+      "precision": 0.2184050987097777,
+      "recall": 0.5841995841995842,
+      "f1": 0.3179452364788414,
+      "contact_rate": 0.3700103531577131
+    },
+    "combinacion": {
+      "threshold": 0.15016671124373776,
+      "precision": 0.22630494505494506,
+      "recall": 0.548024948024948,
+      "f1": 0.320330538340017,
+      "contact_rate": 0.33498216956171634
+    }
+  },
+  "modelos": [
+    {
+      "modelo": "precision",
+      "umbral": 0.32119,
+      "roc_auc": 0.6867,
+      "pr_auc_average_precision": 0.27419,
+      "ks": 0.26969,
+      "precision": 0.39161,
+      "recall": 0.13965,
+      "f1": 0.20588,
+      "brier": 0.11186,
+      "contact_rate": 0.04934,
+      "tp": 112,
+      "fp": 174,
+      "fn": 690,
+      "tn": 4820
+    },
+    {
+      "modelo": "recall",
+      "umbral": 0.13362,
+      "roc_auc": 0.66678,
+      "pr_auc_average_precision": 0.26159,
+      "ks": 0.2432,
+      "precision": 0.21325,
+      "recall": 0.56983,
+      "f1": 0.31036,
+      "brier": 0.11314,
+      "contact_rate": 0.36974,
+      "tp": 457,
+      "fp": 1686,
+      "fn": 345,
+      "tn": 3308
+    },
+    {
+      "modelo": "combinacion",
+      "umbral": 0.15017,
+      "roc_auc": 0.68458,
+      "pr_auc_average_precision": 0.27653,
+      "ks": 0.2587,
+      "precision": 0.22062,
+      "recall": 0.53367,
+      "f1": 0.31218,
+      "brier": 0.11185,
+      "contact_rate": 0.33471,
+      "tp": 428,
+      "fp": 1512,
+      "fn": 374,
+      "tn": 3482
+    }
+  ],
+  "ganador_segun_pr_auc": "combinacion",
+  "aviso": "Demostración académica. No son resultados de clientes ni prueba causal o de impacto económico."
+}

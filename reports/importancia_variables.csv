@@ -1,0 +1,26 @@
+variable,descripcion,importancia_ap,desviacion
+limite_log,Logaritmo del límite de crédito,0.025216,0.005178
+importe_saldo_reciente_log,Logaritmo del saldo positivo de septiembre,0.022579,0.003544
+max_atraso_6m,Mayor código de atraso positivo en los seis meses,0.014786,0.002078
+recencia_ultimo_atraso,Meses transcurridos desde el último atraso positivo (7 si ninguno),0.009910,0.001129
+meses_sin_pago,Meses sin pago reportado,0.006989,0.001865
+pago_reciente_log,Logaritmo del pago positivo de septiembre,0.006693,0.002401
+utilizacion_volatilidad,Desviación típica de la utilización,0.005123,0.004103
+utilizacion_reciente,Saldo positivo de septiembre dividido por cupo,0.003522,0.000975
+tendencia_utilizacion,Pendiente mensual estimada de utilización,0.003429,0.002711
+cambio_utilizacion,Utilización reciente menos la de abril,0.003288,0.002927
+ratio_pago_saldo_mediano,Mediana de ratios mensuales pago/saldo,0.002403,0.000703
+atrasos_6m,Meses con código de atraso positivo,0.001626,0.000342
+atrasos_3m,Meses recientes con código de atraso positivo,0.001306,0.000253
+utilizacion_max,Pico de utilización en seis cortes,0.001237,0.000238
+utilizacion_media,Utilización promedio de seis cortes,0.000866,0.000676
+meses_sobre_cupo,Meses con saldo reportado superior al cupo,0.000224,0.000323
+tendencia_atrasos,Atrasos recientes menos atrasos antiguos,0.000182,0.000133
+meses_estado_no_positivo,"Meses con código 0, -1 o -2 (semántica parcial)",0.000086,0.000166
+volatilidad_pago,Volatilidad de pagos normalizada por cupo,0.000083,0.000953
+severidad_reciente,Mayor severidad positiva de los últimos tres meses,0.000000,0.000000
+persistencia_atraso,Racha de atrasos positivos hacia el corte,0.000000,0.000000
+tendencia_pago,Pendiente mensual de pagos normalizados por cupo,-0.000845,0.000513
+ratio_pago_saldo_reciente,Pago reciente sobre saldo positivo reciente,-0.001033,0.001133
+pago_reciente_vs_historico,Pago reciente sobre pago medio de meses anteriores,-0.002304,0.001499
+ratio_pago_saldo_agregado,Suma de pagos sobre suma de saldos positivos,-0.002322,0.001325
