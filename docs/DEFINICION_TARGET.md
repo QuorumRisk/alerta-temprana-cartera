@@ -1,6 +1,8 @@
-# Diseño del target: antes de entrenar
+# Definición de target · priorización transversal de riesgo
 
-> ⚠️ **Datos públicos; no son datos de clientes de Quórum Risk.** Este ejercicio tiene una sola fecha de corte y no sustituye el acuerdo de definición de target con un negocio real.
+> ⚠️ **Datos públicos UCI #350 (CC BY 4.0); no son datos de clientes
+> de Quórum Risk.** Este ejercicio tiene una sola fecha de corte y no
+> sustituye el acuerdo de definición de target con un negocio real.
 
 ## 1. Unidad de análisis y corte
 
@@ -18,7 +20,7 @@ Se excluyen registros con `PAY_0 > 0`, pues presentan un **código positivo de r
 
 Quedan los casos con `PAY_0 <= 0`, descritos **únicamente** como *sin atraso positivo registrado en septiembre*. **No debe decirse que todos están al día**: la ficha UCI no define completamente los códigos 0 y -2. Estos estados se conservan sin asignarles una interpretación causal/contable inventada.
 
-El evento del mes siguiente puede estar influido por antecedentes de mora anteriores al corte; por tanto, el análisis es **riesgo de default siguiente mes en una cohorte sin atraso positivo actual**, no una prueba rigurosa de *primer deterioro*.
+El evento del mes siguiente puede estar influido por antecedentes de mora anteriores al corte; por tanto, el análisis es **ranking transversal de probabilidad de default del siguiente mes en una cohorte sin atraso positivo actual**, no una prueba rigurosa de *primer deterioro*. La predicción prospectiva de la etiqueta **no** convierte en *out-of-time* la validación entre filas de un mismo corte.
 
 ## 3. Ingeniería de variables sin fuga temporal intencional
 
@@ -38,7 +40,7 @@ Los umbrales se ajustan exclusivamente con probabilidades *out-of-fold* de desar
 - **Recall:** maximiza recall sujeto a una precisión mínima de tasa base + 8 puntos porcentuales y un máximo de 45% de clientes señalados.
 - **Combinación:** promedio simple 50/50, umbral de mejor F1 con un máximo de 40% de clientes señalados. **No es una técnica superior por definición.**
 
-Estas restricciones ilustran objetivos operativos alternativos, **no un mandato de negocio ni una optimización económica real**. El 25% reservado sirve para evaluación final, sin retocar esos umbrales tras conocer las métricas.
+Estas restricciones ilustran objetivos operativos alternativos, **no un mandato de negocio ni una optimización económica real**. El 25% reservado sirve para evaluación final, sin retocar esos umbrales tras conocer las métricas. La captura top 20 % se compara con reglas sin ML basadas en utilización o peor estado de pago histórico (véase `docs/VALIDACION.md`).
 
 ## 5. Qué exige un proyecto real
 

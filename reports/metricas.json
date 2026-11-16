@@ -1,18 +1,35 @@
 {
+  "aviso": "Datos públicos de UCI, no de clientes. Resultados offline sin inferencia causal ni impacto económico.",
+  "entorno": {
+    "python": "3.12.14",
+    "sistema": "Linux",
+    "arquitectura": "x86_64",
+    "librerias": {
+      "numpy": "2.3.5",
+      "pandas": "2.2.3",
+      "scikit-learn": "1.8.0",
+      "matplotlib": "3.10.8",
+      "xlrd": "2.0.1",
+      "PyYAML": "6.0.3"
+    },
+    "commit_codigo_fuente": "fe61a257",
+    "nota_commit": "Revisión fuente del pipeline; no es el commit que incorpora este JSON (referencia circular)."
+  },
   "dataset": {
     "nombre": "Default of Credit Card Clients",
     "doi": "https://doi.org/10.24432/C55S3H",
     "licencia": "CC BY 4.0",
-    "fuente": "https://archive.ics.uci.edu/static/public/350/default+of+credit+card+clients.zip"
+    "fuente": "https://archive.ics.uci.edu/static/public/350/default+of+credit+card+clients.zip",
+    "sha256_zip": "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602"
   },
   "definicion_target": {
     "observacion": "abril-septiembre 2005",
-    "desempeno": "siguiente mes (etiqueta UCI)",
+    "desempeno": "mes siguiente (etiqueta UCI)",
     "evento": "default payment next month = 1",
     "no_evento": "default payment next month = 0",
-    "indeterminados": "etiquetas ausentes/no binarias excluidas; ninguno en este dataset",
+    "indeterminados": "etiquetas ausentes/no binarias excluidas",
     "exclusion_cartera_correctiva": "PAY_0 > 0",
-    "semantica_ambigua": "PAY_0 0/-2 no prueba que esté al día"
+    "semantica_ambigua": "PAY_0 0/-2 no garantiza estar al día"
   },
   "cohorte": {
     "total_filas_fuente": 30000,
@@ -22,12 +39,12 @@
     "filas_cohorte_preventiva": 23182,
     "eventos_cohorte": 3207,
     "tasa_evento_cohorte": 0.13834009145026313,
-    "nota": "PAY_0 <= 0 significa sin atraso POSITIVO registrado; no garantiza ausencia de riesgos ni pagos puntuales."
+    "nota": "PAY_0 <= 0 solo indica ausencia de atraso positivo registrado; 0/-2 son ambiguos."
   },
   "validacion": {
     "particion": "75/25 estratificada, random_state=42",
-    "desarrollo_cv": "4-fold StratifiedKFold; umbrales a partir de probabilidades out-of-fold",
-    "motivo_no_out_of_time": "único corte temporal para todos los clientes",
+    "desarrollo_cv": "4-fold StratifiedKFold, umbrales según probabilidades OOF",
+    "motivo_no_out_of_time": "único corte transversal; no hay cohortes de observación en fechas distintas",
     "n_desarrollo": 17386,
     "n_prueba": 5796
   },
@@ -54,6 +71,15 @@
       "contact_rate": 0.33498216956171634
     }
   },
+  "baselines": {
+    "utilizacion_descendente": {
+      "captura_eventos_top_20_pct": 23.316708
+    },
+    "peor_atraso_6m_desempate_utilizacion": {
+      "captura_eventos_top_20_pct": 35.660848
+    }
+  },
+  "mejor_baseline": "peor_atraso_6m_desempate_utilizacion",
   "modelos": [
     {
       "modelo": "precision",
@@ -69,7 +95,9 @@
       "tp": 112,
       "fp": 174,
       "fn": 690,
-      "tn": 4820
+      "tn": 4820,
+      "captura_eventos_top_20_pct": 38.528678,
+      "diferencia_vs_mejor_regla_pp": 2.86783
     },
     {
       "modelo": "recall",
@@ -85,7 +113,9 @@
       "tp": 457,
       "fp": 1686,
       "fn": 345,
-      "tn": 3308
+      "tn": 3308,
+      "captura_eventos_top_20_pct": 37.032419,
+      "diferencia_vs_mejor_regla_pp": 1.371571
     },
     {
       "modelo": "combinacion",
@@ -101,9 +131,12 @@
       "tp": 428,
       "fp": 1512,
       "fn": 374,
-      "tn": 3482
+      "tn": 3482,
+      "captura_eventos_top_20_pct": 38.778055,
+      "diferencia_vs_mejor_regla_pp": 3.117207
     }
   ],
   "ganador_segun_pr_auc": "combinacion",
-  "aviso": "Demostración académica. No son resultados de clientes ni prueba causal o de impacto económico."
+  "mejor_modelo_captura_top_20": "combinacion",
+  "nota_uplift": "Diferencia descriptiva de captura de eventos; NO uplift causal, ahorro o ROI."
 }
