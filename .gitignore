@@ -4,7 +4,7 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 .ipynb_checkpoints/
-data/
+/data/
 *.joblib
 *.pkl
 .env
