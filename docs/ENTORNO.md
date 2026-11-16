@@ -35,7 +35,7 @@ código predictivo** que sirve como origen del reporte, **no al commit que
 contiene ese mismo JSON**. Un archivo no puede incluir el SHA de su propio
 commit sin circularidad: editar el archivo cambia el SHA. El commit final
 de publicación se proporciona por separado.
-La revisión fuente modular de esta entrega es **`671b6465`**.
+La revisión fuente modular y completa de esta entrega es **`95f895c7`**.
 
 ## Reproducción
 

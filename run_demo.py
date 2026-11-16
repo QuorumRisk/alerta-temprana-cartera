@@ -36,7 +36,7 @@ SEMILLA = 42
 DEPENDENCIAS = ("numpy", "pandas", "scikit-learn", "matplotlib", "xlrd", "PyYAML")
 # Revisión publicada del código modular que se audita; el commit final
 # de informes es otro porque un JSON no puede contener su propio hash.
-COMMIT_CODIGO_FUENTE = "671b6465"
+COMMIT_CODIGO_FUENTE = "95f895c7"
 
 
 def validar_entorno() -> None:
