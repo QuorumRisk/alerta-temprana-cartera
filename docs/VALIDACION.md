@@ -1,55 +1,33 @@
-# Validación transversal, sin reclamar out-of-time
+# Cómo evaluamos el ranking de riesgo
 
-## Lo que el dataset permite demostrar
+Los 30.000 registros de UCI pertenecen a un solo corte: abril a septiembre de 2005 como historia y la etiqueta oficial del mes siguiente como desenlace. No tenemos cosechas de decisión de otros meses o años. Ordenar los registros por `ID` no produciría una prueba out-of-time, aunque el gráfico resultara convincente.
 
-Los 30.000 registros UCI comparten **una única fecha de observación**:
-historia abril–septiembre de 2005 y etiqueta del mes siguiente. **No hay
-cohortes de decisión independientes en años/meses posteriores**. Ordenar por
-`ID` sería metodológicamente incorrecto: no convierte el test en temporal.
+## Separación de datos
 
-1. El conjunto elegible se divide **75 % desarrollo / 25 % test** mediante
-   `train_test_split(stratify=y, random_state=42)`.
-2. En desarrollo se ejecuta **4-fold StratifiedKFold** con semilla 42.
-3. Los candidatos generan probabilidades **out-of-fold**. Sobre ellas, y
-   no sobre test, se eligen los umbrales de precisión, recall y F1.
-4. Los modelos se entrenan en el desarrollo completo y se predice el 25 %
-   reservado **una sola vez**, sin retocar pesos ni umbrales después.
-5. Los hiperparámetros se conservan en YAML y **no** se eligen usando test.
+Primero apartamos un 25 por ciento para test mediante `train_test_split(stratify=y, random_state=42)`. El 75 por ciento restante es desarrollo y se trabaja con `StratifiedKFold` de cuatro folds y semilla 42. Generamos predicciones out-of-fold para elegir umbrales sin mirar el resultado del conjunto reservado.
 
-## Candidatos y criterios
+Con esos umbrales fijados, entrenamos cada candidato en todo el conjunto de desarrollo y evaluamos una vez en test. Los hiperparámetros residen en YAML y tampoco se ajustan usando test.
 
-| Candidato | Modelo | Umbral de desarrollo |
-| --- | --- | --- |
-| Precisión | HistGradientBoosting | Maximiza precisión; contacto ≥5 %, recall ≥12 % |
-| Recall | Regresión logística escalada | Maximiza recall; precisión ≥tasa base+8 pp, contacto ≤45 % |
-| Combinación | Promedio fijo 50/50 | Maximiza F1; contacto ≤40 % |
+## Las tres estrategias
 
-Los nombres de las estrategias reflejan **los umbrales**, no una garantía
-intrínseca de que cada algoritmo sea siempre el mejor en esa métrica.
-La combinación se evalúa y no se considera superior por definición.
+La primera combina `HistGradientBoosting` con una política de umbral que busca precisión. Debe seleccionar al menos el 5 por ciento de las cuentas y alcanzar un recall mínimo del 12 por ciento.
 
-## Métricas y comparación con reglas simples
+La segunda usa regresión logística escalada. Su umbral intenta maximizar recall, pero exige precisión no inferior a la tasa base de eventos más 8 puntos porcentuales y limita los contactos al 45 por ciento.
 
-- AUC ROC, average precision (PR-AUC/AP), KS, Brier.
-- Precisión, recall y F1 al umbral OOF; porcentaje de cuentas señaladas.
-- Lift por decil, ganancias acumuladas y calibración por cuantiles.
-- **Benchmark sin ML**, fijado antes de conocer las etiquetas de test:
-  - Mayor `utilizacion_reciente`.
-  - Mayor `max_atraso_6m`, desempate por utilización reciente.
-- **Misma métrica para todos:** proporción de eventos del mes siguiente
-  capturada al priorizar el **20 % de clientes** por cada estrategia.
-- El diferencial **modelo − mejor regla simple** aparece en JSON, resumen
-  y `figures/valor_incremental.png`. No es uplift causal ni dinero recuperado.
+La tercera promedia 50/50 las probabilidades de ambos modelos. Elegimos su umbral para F1 en desarrollo, con un máximo del 40 por ciento de cuentas señaladas. Que dos predicciones se combinen no significa que el resultado sea mejor. Los nombres «precisión» y «recall» describen la política de corte, no una propiedad garantizada del algoritmo.
 
-El mejor candidato por **AP** y el mejor candidato por **captura top 20 %**
-se identifican separadamente. Un ganador retrospectivo en test no se usa
-para reoptimizar los modelos: la elección real debería confirmarse en un
-período posterior y evaluarse contra política vigente.
+## Qué medimos
 
-## No apto para despliegue
+Reportamos AUC ROC, average precision (PR-AUC/AP), KS y Brier. Con los umbrales fijados calculamos precisión, recall, F1 y porcentaje de cuentas señaladas. También publicamos ganancias y lift por decil, además de calibración por cuantiles.
 
-Faltan out-of-time, estimación de incertidumbre/intervalos, auditoría de
-disponibilidad por fecha, seguridad y sesgos, costes y capacidad operativa,
-validación de calibración por segmentos, PSI/drift y seguimiento.
-Un score de riesgo tampoco mide que contactar a un cliente **evite** su
-evento: para ello hacen falta diseños experimentales o causales.
+La prueba más cercana a una decisión operativa consiste en ordenar las cuentas y mirar qué porcentaje de eventos del mes siguiente concentra el 20 por ciento priorizado. Aplicamos exactamente ese criterio a todos los candidatos y a dos reglas que no requieren ML: ordenar por `utilizacion_reciente`, o por `max_atraso_6m` con desempate por utilización.
+
+El informe publica la diferencia en puntos porcentuales entre cada modelo y la mejor regla sencilla. Aparece en `metricas.json`, `reports/resumen.md` y `reports/figures/valor_incremental.png`. No es uplift causal, ahorro ni dinero recuperado.
+
+Identificamos por separado el candidato con mayor AP y el de mayor captura top 20 por ciento. Ganar retrospectivamente una métrica en test no autoriza a volver a optimizarlo con ese test. Una elección operativa necesitaría confirmación en otro período.
+
+## Lo que no podemos concluir
+
+Aquí no hay prueba temporal, intervalos de incertidumbre, verificación completa de cuándo estaban disponibles los datos ni evaluación de costes y capacidad del equipo de gestión. También faltan revisión de sesgos y seguridad, calibración por segmentos, seguimiento de PSI y drift, y validación de políticas de contacto.
+
+Una predicción de default identifica correlaciones del historial con un evento futuro. No demuestra que llamar al cliente prevenga ese evento; para sostener esa afirmación habría que medir la intervención con un diseño experimental o causal.

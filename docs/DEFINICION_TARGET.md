@@ -1,54 +1,37 @@
-# Definición de target · priorización transversal de riesgo
+# Definición del evento y de la población
 
-> ⚠️ **Datos públicos UCI #350 (CC BY 4.0); no son datos de clientes
-> de Quórum Risk.** Este ejercicio tiene una sola fecha de corte y no
-> sustituye el acuerdo de definición de target con un negocio real.
+Este caso usa los datos públicos UCI #350, publicados bajo licencia CC BY 4.0. No contienen información de clientes de Quórum Risk. Hay una sola fecha de corte y, por tanto, la definición no sustituye la que tendríamos que acordar con un negocio real.
 
-## 1. Unidad de análisis y corte
+## Qué cuenta observamos
 
-- **Unidad:** cliente/tarjeta observada en el dataset UCI #350.
-- **Ventana de observación:** abril a septiembre de 2005 (seis estados mensuales de pago, saldo y pago efectuado).
-- **Corte de decisión:** cierre de septiembre de 2005, según la convención temporal publicada para las variables UCI.
-- **Ventana de desempeño:** *mes siguiente*, representado por la etiqueta oficial `default payment next month`; no se conoce la fecha exacta de incumplimiento.
-- **Evento positivo (`Y = 1`):** *default* reportado para el mes siguiente por UCI. No se redefine unilateralmente como 30, 60 o 90 DPD.
-- **No evento (`Y = 0`):** ausencia de ese *default* reportado en la misma ventana.
-- **Casos indeterminados:** target ausente, fuera de {0,1}, historial necesario incompleto o cupo inválido. El pipeline los aparta; en la fuente descargada no se detectaron casos de este tipo.
+La unidad de análisis es una tarjeta o cliente del archivo UCI. Vemos seis meses de estados de pago, saldos y pagos efectuados, entre abril y septiembre de 2005. La decisión se sitúa al cierre de septiembre, según la convención de la fuente.
 
-## 2. Definición de la cohorte preventiva
+Dejamos fuera las cuentas con `PAY_0 > 0`, porque ya reportan un código positivo de retraso en septiembre. Este ejemplo se concentra en las cuentas con `PAY_0 <= 0`. No afirmamos que todas estén al día: la documentación de UCI no aclara por completo el significado de los códigos 0 y -2.
 
-Se excluyen registros con `PAY_0 > 0`, pues presentan un **código positivo de retraso en septiembre**. Esos clientes requerirían una gestión correctiva o un caso distinto de clasificación.
+## Qué queremos predecir
 
-Quedan los casos con `PAY_0 <= 0`, descritos **únicamente** como *sin atraso positivo registrado en septiembre*. **No debe decirse que todos están al día**: la ficha UCI no define completamente los códigos 0 y -2. Estos estados se conservan sin asignarles una interpretación causal/contable inventada.
+La etiqueta oficial es `default payment next month`. Si es 1, contamos un evento positivo en el mes siguiente; si es 0, un no evento. El dataset no informa la fecha exacta del incumplimiento, así que no convertimos esa etiqueta en una transición inventada de 0 a 30, 60 o 90 DPD.
 
-El evento del mes siguiente puede estar influido por antecedentes de mora anteriores al corte; por tanto, el análisis es **ranking transversal de probabilidad de default del siguiente mes en una cohorte sin atraso positivo actual**, no una prueba rigurosa de *primer deterioro*. La predicción prospectiva de la etiqueta **no** convierte en *out-of-time* la validación entre filas de un mismo corte.
+Cuando faltan la etiqueta, los campos necesarios de historial o un límite de crédito válido, se excluye la observación. También se descartan etiquetas distintas de 0 y 1. En la descarga utilizada no aparecieron casos indeterminados de ese tipo.
 
-## 3. Ingeniería de variables sin fuga temporal intencional
+Es un ranking transversal de probabilidad de default del mes siguiente entre cuentas sin código positivo de atraso actual. No prueba cuándo comenzó un deterioro. Tampoco convierte la partición de clientes de septiembre en una validación temporal.
 
-- Estados de pago: intensidad, recencia, tendencia, persistencia y frecuencia de códigos positivos.
-- Saldo y cupo: ratios de utilización, nivel reciente, evolución y volatilidad.
-- Pagos: frecuencia de pagos reportados, pagos relativos a saldos, tendencia e inestabilidad.
-- Los ratios de pagos/saldos son **proxies**, pues los ciclos exactos y la conciliación mensual no están detallados.
-- Ni `ID` ni la etiqueta ni variables de octubre entran al entrenamiento. Se excluyen sexo, edad, educación y estado civil para mantener un ejemplo enfocado en comportamiento y evitar dependencias demográficas no justificadas.
+## Información que entra
 
-## 4. Validación y elección de estrategia
+Construimos indicadores de frecuencia, intensidad, recencia y tendencia de los códigos históricos de atraso; saldos y utilización de cupo; y estabilidad y proporciones de pagos. Los cocientes entre pagos y saldos son aproximaciones, no conciliaciones contables de ciclos que la fuente no documenta en detalle.
 
-No existe una dimensión de **fecha de corte distinta por cliente**. Un split ordenado por ID no es OOT. Se emplea una muestra final reservada 25% estratificada y validación cruzada estratificada de cuatro folds sobre el 75% de desarrollo.
+El modelo no recibe `ID`, la etiqueta del mes siguiente ni ninguna variable de octubre. Tampoco incorpora sexo, edad, educación o estado civil, porque aquí queremos examinar comportamiento sin introducir dependencias demográficas que no hemos justificado.
 
-Los umbrales se ajustan exclusivamente con probabilidades *out-of-fold* de desarrollo:
+## Cómo juzgamos el resultado
 
-- **Precisión:** maximiza precisión bajo un mínimo de 5% de clientes señalados y recall de 12%.
-- **Recall:** maximiza recall sujeto a una precisión mínima de tasa base + 8 puntos porcentuales y un máximo de 45% de clientes señalados.
-- **Combinación:** promedio simple 50/50, umbral de mejor F1 con un máximo de 40% de clientes señalados. **No es una técnica superior por definición.**
+Con un solo corte, reservamos el 25 por ciento de las cuentas de forma estratificada y trabajamos sobre el 75 por ciento restante con cuatro folds también estratificados. Los umbrales salen únicamente de predicciones out-of-fold del conjunto de desarrollo.
 
-Estas restricciones ilustran objetivos operativos alternativos, **no un mandato de negocio ni una optimización económica real**. El 25% reservado sirve para evaluación final, sin retocar esos umbrales tras conocer las métricas. La captura top 20 % se compara con reglas sin ML basadas en utilización o peor estado de pago histórico (véase `docs/VALIDACION.md`).
+La estrategia de precisión busca la mayor precisión posible, pero exige señalar al menos el 5 por ciento de las cuentas y alcanzar un recall del 12 por ciento. La de recall busca cobertura con una precisión mínima de tasa base más 8 puntos porcentuales y un máximo del 45 por ciento de cuentas señaladas. Para la combinación, promediamos 50/50 las probabilidades y elegimos por F1, sin superar el 40 por ciento de contactos. Estas son restricciones ilustrativas, no decisiones de una operación comercial.
 
-## 5. Qué exige un proyecto real
+El 25 por ciento de test queda reservado para evaluar, no para corregir umbrales. También contrastamos la captura de eventos en el 20 por ciento priorizado frente a reglas sencillas basadas en utilización y en el peor código histórico de pago. El procedimiento está en [VALIDACION.md](VALIDACION.md).
 
-1. Definición conjunta del target, DPD, eventos y horizontes (por ejemplo, transición 0→30 DPD), fechas de disponibilidad real y exclusiones.
-2. Contratos de datos, reconciliación de flujos, identificadores y auditoría de posibles fugas de información.
-3. Backtesting *out-of-time* con múltiples cohortes históricas y, si procede, separación por entidad/persona.
-4. Capacidad comercial de contacto, costes, intervenciones y medición causal del impacto.
-5. Validación de sesgos, cumplimiento, calidad, explicabilidad y aprobaciones pertinentes.
-6. Seguimiento de drift y PSI, desempeño, calibración y procedimientos de reentrenamiento.
+## Qué falta para usarlo en un negocio
 
-**Regla del proyecto:** ningún resultado offline demuestra por sí solo recuperación de dinero, reducción de mora o retorno económico.
+Antes de implantar algo así habría que acordar con Riesgo o Cobranza el evento real, sus días de mora, horizonte y exclusiones; auditar fechas de disponibilidad y cambios retroactivos; y comprobar varias cohortes futuras mediante backtesting out-of-time. También necesitaríamos evaluar sesgos, cumplimiento y aprobaciones, capacidad de contacto, costes de gestión, calibración, drift, PSI y posibles necesidades de reentrenamiento.
+
+Un resultado offline no demuestra que contactar evite impagos, reduzca mora o recupere dinero. Eso requiere evaluar intervenciones reales.

@@ -1,9 +1,7 @@
 # Combinación de probabilidades
 
-Promedio fijo **50/50** entre boosting y logística, con pesos explícitos en
-`hiperparametros.yaml`. No entrena un tercer algoritmo ni ajusta sus pesos
-en el test. Su umbral se elige con CV estratificada de desarrollo buscando
-F1, con un máximo de **40 %** de contactos.
+Probamos una mezcla sencilla: 50 por ciento de la probabilidad estimada por boosting y 50 por ciento de la regresión logística. Los pesos están en `hiperparametros.yaml` y quedan fijados antes del test. No hay un tercer algoritmo entrenado ni una búsqueda de pesos a partir de los resultados reservados.
 
-**La combinación se evalúa, no se presupone ganadora.** Un incremento de AP
-pequeño no evidencia superioridad estable ni beneficio económico.
+Elegimos el umbral con la validación cruzada estratificada del conjunto de desarrollo. El criterio es F1 y no permite señalar más del 40 por ciento de las cuentas.
+
+La combinación compite con los modelos individuales y con las reglas sin ML. Una ventaja pequeña en AP no demuestra que sea estable ni que genere un beneficio económico. Si no gana con claridad, no tiene por qué usarse.

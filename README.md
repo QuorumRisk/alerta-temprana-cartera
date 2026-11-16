@@ -1,147 +1,76 @@
-# Quórum Risk · Priorización transversal de riesgo de crédito
+# Quórum Risk. Priorizar el seguimiento de cartera
 
-> ⚠️ **DATOS PÚBLICOS UCI, NO DE CLIENTES.** Demostración académica con
-> *Default of Credit Card Clients* (Taiwán, 2005). Las métricas **no**
-> representan resultados comerciales, eficacia en producción ni reducción
-> causal del impago. El repositorio conserva por continuidad el nombre
-> `alerta-temprana-cartera`, pero **NO demuestra una alerta temprana validada
-> temporalmente**: su evaluación es estrictamente transversal.
+Nota: este caso usa datos públicos de UCI, no información de clientes. Trabajamos con *Default of Credit Card Clients*, una muestra de Taiwán de 2005. Las métricas son de un ejercicio académico; no reflejan resultados comerciales, reducción real de impagos ni desempeño en producción. El repositorio conserva el nombre `alerta-temprana-cartera`, pero no demuestra una alerta temprana validada a lo largo del tiempo. Su evaluación es transversal.
 
-## La conclusión antes del algoritmo
+## De qué trata
 
-Para identificar a quién revisar entre los clientes **sin código positivo
-de atraso registrado en septiembre**, una regla sencilla —priorizar por
-**peor atraso de los seis meses anteriores**, con desempate por utilización—
-captura **35,66 % de los defaults del mes siguiente** entre el 20 % de
-cuentas prioritarias. La combinación de modelos captura **38,78 %**:
-**+3,12 puntos porcentuales** en el test reservado.
+¿A qué cuentas conviene dar seguimiento si hoy no registran un código positivo de atraso, pero algunas incumplirán el mes siguiente? Esa es la pregunta de este caso.
 
-La mejora observada **no valida su persistencia temporal** ni demuestra
-que gestionar esas cuentas evite impagos. Sin un out-of-time real, intervalos
-de incertidumbre y costos de gestión, **no recomendamos poner el ML en
-producción** basándonos solo en esta prueba. El modelo tiene que ganarse
-su lugar frente a una regla de negocio; si no demuestra valor neto, no entra.
+Tomamos el comportamiento disponible entre abril y septiembre de 2005, construimos variables de pagos y utilización y estimamos la probabilidad del evento que el dataset reporta para el mes siguiente. Antes de decidir si merece la pena usar un modelo, lo comparamos con reglas sencillas que un equipo puede aplicar sin ML.
 
-**Pruebas:** [métricas completas](reports/metricas.json) ·
-[comparación visual contra reglas simples](reports/figures/valor_incremental.png) ·
-[informe del holdout](reports/resumen.md).
+## Qué encontramos al compararlo con una regla sencilla
 
-![Eventos futuros capturados en el 20% priorizado](reports/figures/valor_incremental.png)
+La mejor regla sin modelo ordena por el peor atraso de los seis meses anteriores y desempata por utilización. Al revisar el 20 por ciento de las cuentas, esa regla concentra el 35,66 por ciento de los defaults del mes siguiente. La combinación de modelos llega a 38,78 por ciento, 3,12 puntos por encima. Ordenar solo por utilización captura 23,32 por ciento.
 
-## 1. Qué predice realmente
+La diferencia existe en este conjunto de prueba, pero no sabemos si se mantendría en otro período. Tampoco prueba que gestionar esas cuentas evite los impagos. Con un solo corte, sin intervalos de incertidumbre ni costos de contacto, no recomendamos llevar el ML a producción a partir de estos números. La comparación sirve para mostrar cómo se cuestiona el valor de un modelo antes de incorporarlo a una estrategia.
 
-| Decisión | Definición auditable |
-| --- | --- |
-| Unidad | Cuenta/tarjeta de crédito del archivo académico UCI |
-| Datos de observación | Códigos de pago, saldos, cuotas/pagos reportados **abril–septiembre de 2005** |
-| Corte | Septiembre de 2005 (una sola fotografía común a todos) |
-| Universo | `PAY_0 <= 0`: sin **código positivo** de retraso en septiembre; 0/-2 son ambiguos |
-| Etiqueta positiva | `default payment next month = 1` según UCI, para el mes siguiente |
-| Etiqueta negativa | `default payment next month = 0` |
-| Exclusiones | `PAY_0 > 0`; target no binario, historia incompleta o límite inválido |
+Se pueden revisar las [métricas completas](reports/metricas.json), la [comparación visual](reports/figures/valor_incremental.png) y el [informe de evaluación](reports/resumen.md).
 
-De **30.000** registros, **23.182** cumplen el universo; **3.207** tienen
-evento positivo (**13,83 %**). No se interpreta el target como transición
-contractual 0→30 DPD, ni como primer deterioro, ni como evento cuya fecha
-exacta se haya observado. La definición está en
-[docs/DEFINICION_TARGET.md](docs/DEFINICION_TARGET.md).
+![Eventos futuros capturados al priorizar el 20 por ciento de cuentas](reports/figures/valor_incremental.png)
 
-## 2. El trabajo antes del modelo
+## Qué cuentas entran y qué estamos prediciendo
 
-Construimos **25 variables originales**, solo con el historial disponible
-hasta el corte de septiembre:
+La unidad es la cuenta o tarjeta del archivo UCI. El historial observado reúne códigos de pago, saldos y pagos de abril a septiembre de 2005. La foto de decisión corresponde a septiembre.
 
-- **Mora histórica:** severidad, frecuencia, recencia, persistencia y tendencia.
-- **Utilización:** saldo sobre cupo, nivel, máximo y volatilidad.
-- **Pagos:** ratios frente a saldos, meses sin pago, tendencia y volatilidad.
-- **Magnitudes relativas:** transformaciones logarítmicas de cupo y saldo.
+Solo entran cuentas con `PAY_0 <= 0`, es decir, sin un código positivo de retraso reportado en ese mes. No equivale necesariamente a estar al día: los códigos 0 y -2 tienen una interpretación ambigua en la fuente. Se excluyen las cuentas con `PAY_0 > 0`, las etiquetas que no sean binarias, los historiales incompletos y los límites de crédito inválidos.
 
-Se excluyen de los predictores **ID, etiqueta, variables demográficas y
-columnas crudas**. Los ratios no son conciliaciones contables; las
-importancias no son relaciones causales. Detalle y lista positiva en
-[docs/FEATURE_ENGINEERING.md](docs/FEATURE_ENGINEERING.md).
+El evento positivo es `default payment next month = 1`, tal como aparece en UCI. El negativo es 0. No lo reinterpretamos como primer deterioro ni como transición contractual de 0 a 30 días de mora, porque el archivo no permite afirmar eso ni proporciona una fecha exacta del evento.
 
-![Importancia por permutación](reports/figures/variables.png)
+De 30.000 registros públicos, 23.182 cumplen la definición de la cohorte. Dentro de ella aparecen 3.207 eventos positivos, el 13,83 por ciento. Las decisiones de definición están en [docs/DEFINICION_TARGET.md](docs/DEFINICION_TARGET.md).
 
-## 3. Tres estrategias y dos reglas sin ML
+## Qué hacemos con el historial
 
-| Estrategia | Técnica | Selección operativa |
-| --- | --- | --- |
-| Precisión | HistGradientBoosting | Umbral de precisión, con cobertura mínima |
-| Recall | Regresión logística escalada | Umbral de recall, con restricción de precisión |
-| Combinación | Promedio fijo 50/50 | Umbral de F1; **no se presume superior** |
-| Regla 1 | Mayor utilización reciente | Ranking determinista, sin ML |
-| Regla 2 | Peor código positivo de atraso previo; desempate por utilización | Ranking determinista, sin ML |
+Construimos 25 variables a partir de los campos mensuales. Un bloque resume la mora anterior, con severidad, frecuencia, recencia, persistencia y tendencia. Otro mira la utilización del crédito, incluidos saldos sobre cupo, máximos, cambios y volatilidad. Los indicadores de pagos recogen ratios, meses sin pago, tendencia y variaciones. También usamos transformaciones logarítmicas para contextualizar cupo y saldo.
 
-Los tres candidatos compiten sobre el mismo **25 % de test reservado**:
+Los identificadores, la etiqueta, las variables demográficas y las columnas crudas quedan fuera de la matriz. Los ratios no son conciliaciones contables y la importancia predictiva no demuestra causalidad. El detalle de cada variable se encuentra en [docs/FEATURE_ENGINEERING.md](docs/FEATURE_ENGINEERING.md).
 
-| Estrategia | AUC ROC | PR-AUC (AP) | KS | Eventos capturados en top 20 % | Δ vs. mejor regla |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Precisión | 0,687 | 0,274 | 0,270 | 38,53 % | +2,87 pp |
-| Recall | 0,667 | 0,262 | 0,243 | 37,03 % | +1,37 pp |
-| Combinación | 0,685 | 0,277 | 0,259 | **38,78 %** | **+3,12 pp** |
+![Importancia de variables](reports/figures/variables.png)
 
-La **regla sencilla ganadora captura 35,66 %**. La diferencia frente al ML
-es **descriptiva**, no uplift causal ni ahorro: un cliente podría haber
-incumplido incluso si se le hubiera contactado. La AP de la combinación
-solo mejora ~0,0023 sobre el mejor candidato individual; también es una
-diferencia pequeña sin evidencia de estabilidad.
+## Los enfoques que ponemos a competir
+
+El primer candidato es `HistGradientBoosting`, con un umbral elegido para favorecer precisión y exigir un mínimo de cobertura. El segundo es una regresión logística escalada, con un umbral orientado a recall y una restricción mínima de precisión. También probamos una combinación fija de ambas probabilidades, 50/50, cuyo umbral se elige por F1 en desarrollo. No damos por hecho que la combinación tenga que ganar.
+
+Además comparamos dos formas de ordenar las cuentas sin entrenar nada: mayor `utilizacion_reciente`, y mayor `max_atraso_6m` con desempate por utilización.
+
+En el 25 por ciento reservado para prueba, la estrategia de precisión obtuvo ROC AUC 0,687, PR-AUC (AP) 0,274 y KS 0,270. Capturó el 38,53 por ciento de los eventos en el 20 por ciento priorizado, 2,87 puntos por encima de la mejor regla sencilla.
+
+La estrategia de recall alcanzó ROC AUC 0,667, AP 0,262 y KS 0,243. Su captura fue 37,03 por ciento, una diferencia de 1,37 puntos.
+
+La combinación dio ROC AUC 0,685, AP 0,277 y KS 0,259. Capturó 38,78 por ciento, 3,12 puntos por encima de la referencia. Su AP supera a la del mejor candidato individual por aproximadamente 0,0023. Esa diferencia es demasiado pequeña para afirmar superioridad estable.
+
+El resultado de un modelo también depende del umbral operativo, de cuántas cuentas se puedan contactar y de lo que cueste hacerlo. Por eso no basta con mirar AUC. Publicamos precisión, recall, F1, Brier, calibración, lift y matrices de confusión en [metricas.json](reports/metricas.json) y el [resumen técnico](reports/resumen.md).
 
 ![Precisión y recall](reports/figures/precision_recall.png)
 
-## 4. Validación honesta: NO es out-of-time
+## Cómo se validó, y qué no se pudo validar
 
-Todos los registros comparten **un mismo corte de observación**. Por ello:
+Todos los registros tienen una única fecha de observación. No podemos simular un test out-of-time ordenando por identificador ni separando clientes del mismo corte como si fueran cosechas distintas.
 
-1. Se reserva **25 %** mediante split estratificado (`random_state=42`).
-2. En el **75 %** restante se usa **CV estratificada de 4 folds**.
-3. Los umbrales se seleccionan con probabilidades **out-of-fold**, sin
-   consultar etiquetas del test.
-4. Se informa AUC, AP, KS, precisión, recall, F1, Brier, calibración, lift
-   y captura top 20 % contra las dos reglas simples.
+Reservamos el 25 por ciento de la muestra de forma estratificada (`random_state=42`). El otro 75 por ciento se usó para desarrollo con validación cruzada estratificada de cuatro folds. Los umbrales se eligieron solo con predicciones out-of-fold de desarrollo y no se reajustaron al ver el test. Evaluamos Brier, calibración y lift por deciles. La importancia por permutación se calculó sobre prueba como diagnóstico posterior, no para volver a modificar el modelo.
 
-**No se dispone de validación temporal**, porque no hay varias cohortes de
-decisión. Ningún split por `ID` arregla esa limitación. Más detalle en
-[docs/VALIDACION.md](docs/VALIDACION.md).
+Falta una prueba temporal auténtica. Eso limita mucho cualquier decisión de despliegue. En [docs/VALIDACION.md](docs/VALIDACION.md) está explicado el procedimiento y lo que necesitaríamos con datos reales.
 
-## 5. Estructura canónica Quórum Risk
+## Cómo se organiza el repo
 
-```text
-repo/
-├── README.md
-├── requirements.txt           # dependencias con ==
-├── .gitignore                 # excluye data/, .env y modelos serializados
-├── data/                      # solo local; ZIP original ignorado
-├── docs/
-│   ├── DEFINICION_TARGET.md
-│   ├── FEATURE_ENGINEERING.md
-│   ├── VALIDACION.md
-│   └── ENTORNO.md
-├── src/
-│   ├── data/                  # descarga UCI y cohorte
-│   ├── features/              # 25 variables documentadas
-│   ├── models/
-│   │   ├── precision/         # modelo.py, hiperparametros.yaml, README.md
-│   │   ├── recall/            # modelo.py, hiperparametros.yaml, README.md
-│   │   └── combinacion/       # modelo.py, hiperparametros.yaml, README.md
-│   └── evaluacion/            # métricas, figuras e informes
-├── reports/
-│   ├── metricas.json
-│   ├── tabla_lift.csv
-│   ├── importancia_variables.csv
-│   ├── resumen.md
-│   └── figures/
-├── tests/
-└── run_demo.py                 # orquestador
-```
+`run_demo.py` coordina la ejecución. `src/data/` descarga la fuente y define la cohorte; `src/features/` construye las 25 variables. Los modelos viven por separado en `src/models/precision/`, `src/models/recall/` y `src/models/combinacion/`, cada uno con `modelo.py`, `hiperparametros.yaml` y su propio README.
 
-## 6. Reproducción y trazabilidad
+La evaluación está en `src/evaluacion/`. Las decisiones de target, variables, validación y entorno se explican en los archivos de `docs/`. Los resultados agregados quedan en `reports/`, con `metricas.json`, `tabla_lift.csv`, `importancia_variables.csv`, `resumen.md` y las figuras. Las pruebas están en `tests/`.
 
-Entorno probado: **Python 3.12.14, Linux x86_64**. Las versiones **exactas**
-de NumPy, pandas, scikit-learn, Matplotlib, xlrd y PyYAML están congeladas
-en `requirements.txt`. Si difieren, el programa **se niega a generar**.
-`reports/metricas.json` registra las versiones efectivas y el commit fuente.
-Consulta [docs/ENTORNO.md](docs/ENTORNO.md).
+La carpeta `data/` solo existe para la descarga local. Está ignorada por Git, igual que los archivos `.env` y los modelos serializados.
+
+## Reproducir desde cero
+
+El entorno de referencia usa Python 3.12.14 en Linux x86_64. Las versiones exactas de NumPy, pandas, scikit-learn, Matplotlib, xlrd y PyYAML están fijadas en `requirements.txt`. Si alguna no coincide, el programa se detiene antes de generar resultados. `metricas.json` registra el entorno y el commit fuente; los detalles están en [docs/ENTORNO.md](docs/ENTORNO.md).
 
 ```bash
 git clone https://github.com/QuorumRisk/alerta-temprana-cartera.git
@@ -153,22 +82,12 @@ python run_demo.py
 python -m unittest discover -s tests -v
 ```
 
-La primera ejecución **requiere internet** para descargar el archivo
-original desde UCI. El ZIP se almacena en `data/` y **no se sube a GitHub**.
-El cargador valida su **SHA-256**, evitando cambios silenciosos de fuente.
-Los archivos de `reports/` contienen únicamente agregados y gráficos.
-Reproducibilidad de métricas no significa validez temporal ni comercial.
+La primera ejecución necesita conexión a internet para descargar el ZIP oficial de UCI. Se guarda en `data/`, no en el repositorio. El script comprueba su SHA-256 para evitar cambios silenciosos de la fuente. Lo versionado en `reports/` son agregados y gráficos, no datos crudos. Reproducir los números no equivale a validar el enfoque temporal o comercialmente.
 
-## 7. Datos, crédito y licencia
+## Fuente y licencia
 
-**Fuente:** I-Cheng Yeh (2009). *Default of Credit Card Clients*. UCI Machine
-Learning Repository. DOI: [10.24432/C55S3H](https://doi.org/10.24432/C55S3H).
-[Ficha oficial UCI #350](https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients).
+El dataset es de I-Cheng Yeh (2009), *Default of Credit Card Clients*, UCI Machine Learning Repository. Su DOI es [10.24432/C55S3H](https://doi.org/10.24432/C55S3H), y la [ficha oficial de UCI](https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients) describe su contenido.
 
-**Licencia de los datos:** [Creative Commons Attribution 4.0 International
-(CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). Se cita la
-fuente y **no se redistribuye el dataset**. La licencia citada corresponde
-a los datos UCI y no constituye una afirmación sobre licencia de código.
+Los datos tienen licencia [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). Los citamos y no los redistribuimos. Esa licencia se refiere al dataset, no es una afirmación sobre la licencia del código.
 
-**Contacto:** [contacto@quorumrisk.co](mailto:contacto@quorumrisk.co) ·
-[quorumrisk.co](https://quorumrisk.co)
+Contacto: [contacto@quorumrisk.co](mailto:contacto@quorumrisk.co), [quorumrisk.co](https://quorumrisk.co).
